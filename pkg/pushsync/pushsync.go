@@ -12,7 +12,9 @@ import (
 
 	"github.com/ethersphere/bee/pkg/accounting"
 	"github.com/ethersphere/bee/pkg/content"
+	"github.com/ethersphere/bee/pkg/headerutils"
 	"github.com/ethersphere/bee/pkg/logging"
+
 	"github.com/ethersphere/bee/pkg/p2p"
 	"github.com/ethersphere/bee/pkg/p2p/protobuf"
 	"github.com/ethersphere/bee/pkg/pricer"
@@ -122,7 +124,7 @@ func (ps *PushSync) handler(ctx context.Context, p p2p.Peer, stream p2p.Stream) 
 
 	// Get price we charge for upstream peer read at headler
 	responseHeaders := stream.ResponseHeaders()
-	price, err := ps.pricer.ReadPriceHeader(responseHeaders)
+	price, err := headerutils.ReadPriceHeader(responseHeaders)
 
 	if err != nil {
 		// if not found in returned header, compute the price we charge for this chunk and
@@ -227,7 +229,7 @@ func (ps *PushSync) pushToClosest(ctx context.Context, ch swarm.Chunk) (rr *pb.R
 		}
 		deferFuncs = append(deferFuncs, func() { ps.accounting.Release(peer, receiptPrice) })
 
-		headers, err := ps.pricer.MakePricingHeaders(receiptPrice, ch.Address())
+		headers, err := headerutils.MakePricingHeaders(receiptPrice, ch.Address())
 		if err != nil {
 			return nil, err
 		}
@@ -240,7 +242,7 @@ func (ps *PushSync) pushToClosest(ctx context.Context, ch swarm.Chunk) (rr *pb.R
 		deferFuncs = append(deferFuncs, func() { go streamer.FullClose() })
 
 		returnedHeaders := streamer.Headers()
-		returnedTarget, returnedPrice, returnedIndex, err := ps.pricer.ReadPricingResponseHeaders(returnedHeaders)
+		returnedTarget, returnedPrice, returnedIndex, err := headerutils.ReadPricingResponseHeaders(returnedHeaders)
 		if err != nil {
 			return nil, fmt.Errorf("push price headers: read returned: %w", err)
 		}
